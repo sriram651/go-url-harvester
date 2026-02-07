@@ -9,11 +9,9 @@ import (
 	"time"
 )
 
-var urlFetchWaitGroup sync.WaitGroup
-
 func main() {
 	pathToInputFile := flag.String("input", "", "The text file to be input")
-	// rateOfRequests := flag.Int("rate", 5, "requests per second")
+	rateOfRequests := flag.Int("rate", 5, "requests per second")
 	pathToOutput := flag.String("output", "", "The output text")
 
 	flag.Parse()
@@ -46,21 +44,28 @@ func main() {
 
 	fmt.Println("\nLoaded", len(targetLinks), "targets")
 
+	var urlFetchWaitGroup sync.WaitGroup
+
 	// This creates a channel - a conveyer belt where you send stuff (jobs)
 	jobs := make(chan string)
 
-	// This is the worker function that waits for the job just beside the conveyer belt
-	go func() {
-		for job := range jobs {
-			fmt.Println("fetching", job)
+	// Determines number of concurrent go-routines
+	var workers int = *rateOfRequests
 
-			// Gimmick to delay the completion of the job
-			time.Sleep(2000 * time.Millisecond)
+	for i := 0; i < workers; i++ {
+		// This is the worker function that waits for the job just beside the conveyer belt
+		go func() {
+			for job := range jobs {
+				fmt.Println("fetching", job)
 
-			// Report to the owner that a job is done
-			urlFetchWaitGroup.Done()
-		}
-	}()
+				// Gimmick to delay the completion of the job
+				time.Sleep(2000 * time.Millisecond)
+
+				// Report to the owner that a job is done
+				urlFetchWaitGroup.Done()
+			}
+		}()
+	}
 
 	// This is the owner function that puts the boxes (jobs) into the channel whenever the worker is ready to pick it up.
 	for _, link := range targetLinks {
