@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 	"time"
 )
+
+var urlFetchWaitGroup sync.WaitGroup
 
 func main() {
 	pathToInputFile := flag.String("input", "", "The text file to be input")
@@ -50,16 +53,25 @@ func main() {
 	go func() {
 		for job := range jobs {
 			fmt.Println("fetching", job)
+
+			// Gimmick to delay the completion of the job
 			time.Sleep(2000 * time.Millisecond)
+
+			// Report to the owner that a job is done
+			urlFetchWaitGroup.Done()
 		}
 	}()
 
 	// This is the owner function that puts the boxes (jobs) into the channel whenever the worker is ready to pick it up.
 	for _, link := range targetLinks {
+		urlFetchWaitGroup.Add(1)
 		jobs <- link
 	}
 
 	// This notifies the owner that there are no more boxes to put on the belt,
 	// so he shuts off the belt once the worker receives the last job
 	close(jobs)
+
+	// Wait for all the jobs to be done before exiting
+	urlFetchWaitGroup.Wait()
 }
