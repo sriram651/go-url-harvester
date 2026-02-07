@@ -9,6 +9,9 @@ import (
 	"time"
 )
 
+// Determines number of concurrent go-routines
+var CONCURRENT_WORKERS int = 10
+
 func main() {
 	pathToInputFile := flag.String("input", "", "The text file to be input")
 	rateOfRequests := flag.Int("rate", 5, "requests per second")
@@ -49,14 +52,19 @@ func main() {
 	// This creates a channel - a conveyer belt where you send stuff (jobs)
 	jobs := make(chan string)
 
-	// Determines number of concurrent go-routines
-	var workers int = *rateOfRequests
+	// Calculate the interval between each tick based on the rate of requests
+	requestIntervalInMs := int(time.Second) / *rateOfRequests
 
-	for i := 0; i < workers; i++ {
+	ticker := time.NewTicker(time.Duration(requestIntervalInMs))
+
+	// Loop deploys the workers
+	for i := 0; i < CONCURRENT_WORKERS; i++ {
 		// This is the worker function that waits for the job just beside the conveyer belt
 		go func() {
 			for job := range jobs {
-				fmt.Println("fetching", job)
+				<-ticker.C
+
+				fmt.Println("fetching", job, "at", time.Now().Unix())
 
 				// Gimmick to delay the completion of the job
 				time.Sleep(2000 * time.Millisecond)
