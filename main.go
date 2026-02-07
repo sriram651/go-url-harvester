@@ -38,8 +38,7 @@ func main() {
 		}
 
 		targetLinks = append(targetLinks, trimmedLine)
-		fmt.Println(trimmedLine)
 	}
 
-	fmt.Println("\nTotal target links loaded from the file:", len(targetLinks))
+	fmt.Println("\nLoaded", len(targetLinks), "targets")
 }
