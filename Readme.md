@@ -1,4 +1,4 @@
-# go-api-harvester
+# go-url-harvester
 
 A small CLI tool to process a list of URLs concurrently with a global rate limit.
 
