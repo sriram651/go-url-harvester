@@ -100,7 +100,7 @@ func fetchDataFromUrl(url string) ([]byte, error) {
 	res, err := http.Get(url)
 
 	if err != nil {
-		return nil, fmt.Errorf("Error fetching from url: %s", err)
+		return nil, err
 	}
 
 	defer res.Body.Close()
@@ -112,10 +112,8 @@ func fetchDataFromUrl(url string) ([]byte, error) {
 	body, readBodyErr := io.ReadAll(res.Body)
 
 	if readBodyErr != nil {
-		return nil, fmt.Errorf("Error while trying to parse body: %s", readBodyErr)
+		return nil, readBodyErr
 	}
-
-	fmt.Println("Body:", string(body))
 
 	return body, nil
 }
