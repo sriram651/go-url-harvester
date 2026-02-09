@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -74,7 +75,11 @@ func main() {
 					fmt.Println(fetchErr)
 				}
 
-				writeResponseToFile(responseBody)
+				writeIntoFileErr := writeResponseToFile(*pathToOutput, job, responseBody)
+
+				if writeIntoFileErr != nil {
+					fmt.Println(writeIntoFileErr)
+				}
 
 				// Report to the owner that a job is done
 				urlFetchWaitGroup.Done()
@@ -118,6 +123,40 @@ func fetchDataFromUrl(url string) ([]byte, error) {
 	return body, nil
 }
 
-func writeResponseToFile(responseBody []byte) {
+func writeResponseToFile(pathToOutputFile string, fetchedUrl string, responseBody []byte) error {
+	// Extract directories from the path
+	directoriesInPath := filepath.Dir(pathToOutputFile)
+
+	if directoriesInPath != "." {
+		// Create all the parent directories if don't exists
+		mkDirErr := os.MkdirAll(directoriesInPath, os.ModePerm)
+
+		if mkDirErr != nil {
+			return mkDirErr
+		}
+	}
+
 	// Execute file creation, write into it
+	file, fileOpenErr := os.OpenFile(pathToOutputFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, os.ModePerm)
+
+	if fileOpenErr != nil {
+		return fileOpenErr
+	}
+
+	defer file.Close()
+
+	// Make it look like logs
+	currentTime := time.Now().Format(time.RFC3339)
+
+	log := currentTime + "(" + fetchedUrl + "):" + string(responseBody) + "\n"
+
+	writeIntoFileBytes, fileWriteErr := file.WriteString(log)
+
+	if fileWriteErr != nil {
+		return fileWriteErr
+	}
+
+	fmt.Printf("Write into %s with %d bytes successful!\n", pathToOutputFile, writeIntoFileBytes)
+
+	return nil
 }
