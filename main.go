@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"strings"
 	"sync"
@@ -66,8 +68,11 @@ func main() {
 
 				fmt.Println("fetching", job, "at", time.Now().Unix())
 
-				// Gimmick to delay the completion of the job
-				time.Sleep(2000 * time.Millisecond)
+				fetchErr := fetchDataFromUrlAndWrite(job)
+
+				if fetchErr != nil {
+					fmt.Println(fetchErr)
+				}
 
 				// Report to the owner that a job is done
 				urlFetchWaitGroup.Done()
@@ -87,4 +92,28 @@ func main() {
 
 	// Wait for all the jobs to be done before exiting
 	urlFetchWaitGroup.Wait()
+}
+
+func fetchDataFromUrlAndWrite(url string) error {
+	res, err := http.Get(url)
+
+	if err != nil {
+		return fmt.Errorf("Error fetching from url: %s", err)
+	}
+
+	defer res.Body.Close()
+
+	if res.StatusCode >= 300 {
+		return fmt.Errorf("Fetch failed with status code %d", res.StatusCode)
+	}
+
+	body, readBodyErr := io.ReadAll(res.Body)
+
+	if readBodyErr != nil {
+		return fmt.Errorf("Error while trying to parse body: %s", readBodyErr)
+	}
+
+	fmt.Println("Body:", string(body))
+
+	return nil
 }
