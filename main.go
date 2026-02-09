@@ -68,11 +68,13 @@ func main() {
 
 				fmt.Println("fetching", job, "at", time.Now().Unix())
 
-				fetchErr := fetchDataFromUrlAndWrite(job)
+				responseBody, fetchErr := fetchDataFromUrl(job)
 
 				if fetchErr != nil {
 					fmt.Println(fetchErr)
 				}
+
+				writeResponseToFile(responseBody)
 
 				// Report to the owner that a job is done
 				urlFetchWaitGroup.Done()
@@ -94,26 +96,30 @@ func main() {
 	urlFetchWaitGroup.Wait()
 }
 
-func fetchDataFromUrlAndWrite(url string) error {
+func fetchDataFromUrl(url string) ([]byte, error) {
 	res, err := http.Get(url)
 
 	if err != nil {
-		return fmt.Errorf("Error fetching from url: %s", err)
+		return nil, fmt.Errorf("Error fetching from url: %s", err)
 	}
 
 	defer res.Body.Close()
 
 	if res.StatusCode >= 300 {
-		return fmt.Errorf("Fetch failed with status code %d", res.StatusCode)
+		return nil, fmt.Errorf("Fetch failed with status code %d", res.StatusCode)
 	}
 
 	body, readBodyErr := io.ReadAll(res.Body)
 
 	if readBodyErr != nil {
-		return fmt.Errorf("Error while trying to parse body: %s", readBodyErr)
+		return nil, fmt.Errorf("Error while trying to parse body: %s", readBodyErr)
 	}
 
 	fmt.Println("Body:", string(body))
 
-	return nil
+	return body, nil
+}
+
+func writeResponseToFile(responseBody []byte) {
+	// Execute file creation, write into it
 }
